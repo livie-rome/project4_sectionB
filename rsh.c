@@ -30,14 +30,25 @@ void sendmsg (char *user, char *target, char *msg) {
 	// TODO:
 	// Send a request to the server to send the message (msg) to the target user (target)
 	// by creating the message structure and writing it to server's FIFO
+	int server;
+	struct message req;
 
+	//open server FIFO for writing
+	server = open("serverFIFO", O_WRONLY);
+	if(server < 0) {
+		//throw error if serverFIFO doesn't open
+		perror("Error opening serverFIFO");
+		return;
+	}
 
+	//populate message structure
+	snprintf(req.source, sizeof(req.source), "%s", user);
+	snprintf(req.target, sizeof(req.target), "%s", target);
+	snprintf(req.msg, sizeof(req.msg), "%s", msg);
 
-
-
-
-
-
+	write(server, &req, sizeof(req));
+	close(server);
+	
 }
 
 void* messageListener(void *arg) {
@@ -48,13 +59,31 @@ void* messageListener(void *arg) {
 	// following format
 	// Incoming message from [source]: [message]
 	// put an end of line at the end of the message
+	char userFIFO[100];
+	int userFD;
+	struct message incomingMsg;
 
+	//open user's FIFO
+	snprintf(userFIFO, sizeof(userFIFO), "%s", uName);
+	userFD = open(userFIFO, O_RDONLY);
+	if (userFD < 0) {
+		//throw error if user FIFO doesn't open
+		perror("Error opening user FIFO");
+		pthread_exit(NULL);
+	}
 
+	while (1) {
+		ssize_t bytesRead = read(userFD, &incomingMsg, sizeof(incomingMsg));
+		//if there are bytes to read, print message
+		if (bytesRead > 0) {
+			printf("Incoming message from [%s]: %s\n", incomingMsg.source, incomingMsg.msg);
+		}
+	}
 
-
-
-
-	pthread_exit((void*)0);
+	close(userFD);
+	pthread_exit(NULL);
+	
+	//pthread_exit((void*)0);
 }
 
 int isAllowed(const char*cmd) {
@@ -68,23 +97,31 @@ int isAllowed(const char*cmd) {
 }
 
 int main(int argc, char **argv) {
-    pid_t pid;
-    char **cargv; 
-    char *path;
-    char line[256];
-    int status;
-    posix_spawnattr_t attr;
+	pid_t pid;
+	char **cargv; 
+	char *path;
+	char line[256];
+	int status;
+	posix_spawnattr_t attr;
 
-    if (argc!=2) {
-	printf("Usage: ./rsh <username>\n");
-	exit(1);
-    }
-    signal(SIGINT,terminate);
+	if (argc!=2) {
+		printf("Usage: ./rsh <username>\n");
+		exit(1);
+	}
+    
+	signal(SIGINT,terminate);
 
-    strcpy(uName,argv[1]);
+	strcpy(uName,argv[1]);
+	
 
-    // TODO:
-    // create the message listener thread
+	// TODO:
+	// create the message listener thread
+	pthread_t listenerThread;
+	//test if the thread was created, if not created throw error
+	if(pthread_create(&listenerThread, NULL, messageListener, NULL) != 0 ) {
+		perror("Error creating message listener thread");
+		exit(EXIT_FAILURE);
+	}
 
 
 
@@ -124,15 +161,19 @@ int main(int argc, char **argv) {
 		// if no message is specified, you should print the followingA
  		// printf("sendmsg: you have to enter a message\n");
 
+		char *target = strtok(NULL, " ");
+		char *msg = strtok(NULL, "");
 
+		if (!target) {
+			printf("sendmsg: you have to specify target user\n");
+			continue;
+		}
 
+		if (!msg) {
+			printf("sendmsg: you have to enter a message\n");
+		}
 
-
-
-
-
-
-
+		sendmsg(uName, target, msg);
 		continue;
 	}
 
