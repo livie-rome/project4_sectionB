@@ -42,11 +42,13 @@ void sendmsg (char *user, char *target, char *msg) {
 	}
 
 	//populate message structure
-	snprintf(req.source, sizeof(req.source), "%s", user);
-	snprintf(req.target, sizeof(req.target), "%s", target);
-	snprintf(req.msg, sizeof(req.msg), "%s", msg);
+	snprintf(req.source, user, sizeof(req.source));
+	snprintf(req.target, target, sizeof(req.target));
+	snprintf(req.msg, msg, sizeof(req.msg));
 
-	write(server, &req, sizeof(req));
+	if(write(server, &req, sizeof(req)) < 0) {
+		perror("Error writing to server FIFO);
+	}	
 	close(server);
 	
 }
@@ -72,16 +74,14 @@ void* messageListener(void *arg) {
 		pthread_exit(NULL);
 	}
 
-	while (1) {
-		ssize_t bytesRead = read(userFD, &incomingMsg, sizeof(incomingMsg));
+	while (read(userFD, &incomingMsg, sizeof(incomingMsg)) > 0) {
 		//if there are bytes to read, print message
-		if (bytesRead > 0) {
-			printf("Incoming message from [%s]: %s\n", incomingMsg.source, incomingMsg.msg);
-		}
+		printf("Incoming message from [%s]: %s\n", incomingMsg.source, incomingMsg.msg);
+		fflush(stdout);
 	}
 
 	close(userFD);
-	pthread_exit(NULL);
+	pthread_exit((void*)0);
 	
 	//pthread_exit((void*)0);
 }
@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
 	//test if the thread was created, if not created throw error
 	if(pthread_create(&listenerThread, NULL, messageListener, NULL) != 0 ) {
 		perror("Error creating message listener thread");
-		exit(EXIT_FAILURE);
+		exit(1);
 	}
 
 
@@ -164,12 +164,12 @@ int main(int argc, char **argv) {
 		char *target = strtok(NULL, " ");
 		char *msg = strtok(NULL, "");
 
-		if (!target) {
+		if (target == NULL) {
 			printf("sendmsg: you have to specify target user\n");
 			continue;
 		}
 
-		if (!msg) {
+		if (msg == NULL) {
 			printf("sendmsg: you have to enter a message\n");
 		}
 
