@@ -42,7 +42,7 @@ int main() {
 		}
 
 		printf("Received a request from %s to send the message %s to %s.\n",req.source,req.msg,req.target);
-		fflush(sdout);
+		fflush(stdout);
 
 		// TODO:
 		// open target FIFO and write the whole message struct to the target FIFO
@@ -51,17 +51,20 @@ int main() {
 		//throw error if target doesn't open
 		if(targetFIFO < 0) {
 			//perror("Error opening target FIFO");
-			fprintf(stderr, "Error: Cannot open FIFO for trager user '%s'.\n", req.target);
+			fprintf(stderr, "Error: Cannot open FIFO for target user '%s'.\n", req.target);
 			continue;
 		}
 
 		//write message and test if it writes
 		if (write(targetFIFO, &req, sizeof(req)) < 0) {
 			perror("Error writing to target FIFO");
+			close(targetFIFO);
+			continue;
+				
 		}
 
 		// close target FIFO after writing the message
-		close(target);
+		close(targetFIFO);
 
 
 	}
