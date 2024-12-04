@@ -31,28 +31,34 @@ int main() {
 	while (1) {
 		// TODO:
 		// read requests from serverFIFO
-		ssize_t bytesRead = read(server, &req, sizeif(req));
+		
+		/*ssize_t bytesRead = read(server, &req, sizeif(req));
 		if (bytesRead <= 0) {
 			//retry if read fails or returns 0
 			continue;
+		}*/
+		if(read(server, &req, sizeof(req)) <= 0){
+			continue; // ignore empty or invaild reads
 		}
 
 		printf("Received a request from %s to send the message %s to %s.\n",req.source,req.msg,req.target);
+		fflush(sdout);
 
 		// TODO:
 		// open target FIFO and write the whole message struct to the target FIFO
-		char targetFIFO[100];
+		int targetFIFO = open(req.target, O_WRONLY);
 		//check is target matches username
-		snprintf(targetFIFO, sizeof(targetFIFO), "%s", req.target);
-		target = open(targetFIFO, O_WRONLY);
 		//throw error if target doesn't open
-		if(target < 0) {
+		if(targetFIFO < 0) {
 			perror("Error opening target FIFO");
 			continue;
 		}
 
-		//send message
-		write(target, &req, sizeof(req));
+		//write message and test if it writes
+		if (write(targetFIFO, &req, sizeof(req)) < 0) {
+			perror("Error writing to target FIFO");
+		}
+
 		// close target FIFO after writing the message
 		close(target);
 
