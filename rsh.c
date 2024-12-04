@@ -43,9 +43,9 @@ void sendmsg (char *user, char *target, char *msg) {
 
 	//populate message structure
 	struct message req;
-	snprintf(req.source, user, sizeof(req.source));
-	snprintf(req.target, target, sizeof(req.target));
-	snprintf(req.msg, msg, sizeof(req.msg));
+	snprintf(req.source, sizeof(req.source), "%s", user);
+	snprintf(req.target, sizeof(req.target), "%s", target);
+	snprintf(req.msg, sizeof(req.msg), "%s", msg);
 
 	if(write(server, &req, sizeof(req)) < 0) {
 		perror("Error writing to server FIFO");
