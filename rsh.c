@@ -31,7 +31,7 @@ void sendmsg (char *user, char *target, char *msg) {
 	// Send a request to the server to send the message (msg) to the target user (target)
 	// by creating the message structure and writing it to server's FIFO
 	int server;
-	struct message req;
+	
 
 	//open server FIFO for writing
 	server = open("serverFIFO", O_WRONLY);
@@ -42,6 +42,7 @@ void sendmsg (char *user, char *target, char *msg) {
 	}
 
 	//populate message structure
+	struct message req;
 	snprintf(req.source, user, sizeof(req.source));
 	snprintf(req.target, target, sizeof(req.target));
 	snprintf(req.msg, msg, sizeof(req.msg));
@@ -61,12 +62,11 @@ void* messageListener(void *arg) {
 	// following format
 	// Incoming message from [source]: [message]
 	// put an end of line at the end of the message
-	char userFIFO[100];
-	int userFD;
-	struct message incomingMsg;
-
+	char userFIFO[256];
 	//open user's FIFO
 	snprintf(userFIFO, sizeof(userFIFO), "%s", uName);
+	
+	int userFD;
 	userFD = open(userFIFO, O_RDONLY);
 	if (userFD < 0) {
 		//throw error if user FIFO doesn't open
@@ -74,14 +74,15 @@ void* messageListener(void *arg) {
 		pthread_exit(NULL);
 	}
 
+	struct message incomingMsg;
 	while (read(userFD, &incomingMsg, sizeof(incomingMsg)) > 0) {
 		//if there are bytes to read, print message
-		printf("Incoming message from [%s]: %s\n", incomingMsg.source, incomingMsg.msg);
+		printf("Incoming message from %s: %s\n", incomingMsg.source, incomingMsg.msg);
 		fflush(stdout);
 	}
 
 	close(userFD);
-	pthread_exit((void*)0);
+		pthread_exit((void*)0);
 	
 	//pthread_exit((void*)0);
 }
