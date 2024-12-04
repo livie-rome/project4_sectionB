@@ -48,7 +48,7 @@ void sendmsg (char *user, char *target, char *msg) {
 	snprintf(req.msg, msg, sizeof(req.msg));
 
 	if(write(server, &req, sizeof(req)) < 0) {
-		perror("Error writing to server FIFO);
+		perror("Error writing to server FIFO");
 	}	
 	close(server);
 	
@@ -82,9 +82,8 @@ void* messageListener(void *arg) {
 	}
 
 	close(userFD);
-		pthread_exit((void*)0);
-	
 	//pthread_exit((void*)0);
+	return NULL;
 }
 
 int isAllowed(const char*cmd) {
@@ -119,7 +118,12 @@ int main(int argc, char **argv) {
 	// create the message listener thread
 	pthread_t listenerThread;
 	//test if the thread was created, if not created throw error
-	if(pthread_create(&listenerThread, NULL, messageListener, NULL) != 0 ) {
+	/*if(pthread_create(&listenerThread, NULL, messageListener, NULL) != 0 ) {
+		perror("Error creating message listener thread");
+		exit(1);
+	}*/
+ 
+	if(pthread_create(&listenerThread, NULL, messageListener, (void*)uName) != 0 ) {
 		perror("Error creating message listener thread");
 		exit(1);
 	}
@@ -172,6 +176,7 @@ int main(int argc, char **argv) {
 
 		if (msg == NULL) {
 			printf("sendmsg: you have to enter a message\n");
+			continue;
 		}
 
 		sendmsg(uName, target, msg);
