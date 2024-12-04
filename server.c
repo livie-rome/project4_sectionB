@@ -50,7 +50,8 @@ int main() {
 		//check is target matches username
 		//throw error if target doesn't open
 		if(targetFIFO < 0) {
-			perror("Error opening target FIFO");
+			//perror("Error opening target FIFO");
+			fprintf(stderr, "Error: Cannot open FIFO for trager user '%s'.\n", req.target);
 			continue;
 		}
 
