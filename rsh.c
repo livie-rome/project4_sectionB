@@ -63,7 +63,7 @@ void* messageListener(void *arg) {
 	// Incoming message from [source]: [message]
 	// put an end of line at the end of the message
 	char userFIFO[256];
-	//open user's FIFO
+	//print user's FIFO
 	snprintf(userFIFO, sizeof(userFIFO), "%s", uName);
 	
 	int userFD;
